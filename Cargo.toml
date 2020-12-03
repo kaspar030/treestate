@@ -3,6 +3,11 @@ name = "treestate"
 version = "0.1.0"
 authors = ["Kaspar Schleiser <kaspar@schleiser.de>"]
 edition = "2018"
+description = "A simple library to store mtimes of files and check for changes later"
+repository = "https://github.com/kaspar030/treestate"
+homepage = "https://github.com/kaspar030/treestate"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
