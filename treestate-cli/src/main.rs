@@ -53,7 +53,7 @@ fn try_main() -> Result<i32> {
             let walker = WalkDir::new(".")
                 .into_iter()
                 .filter_map(|e| e.ok())
-                .filter(|e| !e.file_type().is_dir())
+                .filter(|e| e.file_type().is_file())
                 .map(|e| e.into_path())
                 .collect::<Vec<_>>();
             let mut treestate: TreeState<FileState, PathBuf> = TreeState::new(walker.iter());
