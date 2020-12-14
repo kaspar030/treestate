@@ -81,8 +81,8 @@ fn try_main() -> Result<i32> {
 
             let mut treestate = collect_thread.join().unwrap();
             treestate.ignore(&PathBuf::from(statefile));
-            let file = File::create(&statefile)?;
-            treestate.dump(file)?;
+            let mut file = File::create(&statefile)?;
+            treestate.dump(&mut file)?;
         }
         ("status", Some(_matches)) => {
             use std::time::Instant;
