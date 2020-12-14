@@ -1,14 +1,15 @@
-use bincode;
-use blake3;
-use hashbrown::HashMap;
-use rayon::prelude::*;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fmt::Debug;
 use std::fs::metadata;
 use std::hash::Hash;
 use std::io::prelude::*;
 use std::path::PathBuf;
 use std::time::SystemTime;
+
+use bincode;
+use blake3;
+use hashbrown::HashMap;
+use rayon::prelude::*;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct FileState {
@@ -104,11 +105,14 @@ where
             .is_some()
     }
 
-    pub fn dump<W>(&self, w: W) -> bincode::Result<()>
+    pub fn dump<W>(&self, w: &mut W) -> Result<(), std::io::Error>
     where
         W: Write,
     {
-        bincode::serialize_into(w, self)
+        let data: Vec<u8> = bincode::serialize(self).unwrap();
+
+        w.write(&data[..])?;
+        Ok(())
     }
 
     pub fn load<R>(r: R) -> bincode::Result<Self>
