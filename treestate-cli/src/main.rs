@@ -52,7 +52,7 @@ fn try_main() -> Result<i32> {
 
     match matches.subcommand() {
         ("store", Some(_matches)) => {
-            let (tx, rx) = channel::bounded::<(PathBuf, FileState)>(1000);
+            let (tx, rx) = channel::unbounded::<(PathBuf, FileState)>();
 
             let collect_thread = thread::spawn(move || {
                 let res: TreeState<FileState, PathBuf> = TreeState::from(rx.iter());
