@@ -1,4 +1,5 @@
 use bincode;
+use blake3;
 use hashbrown::HashMap;
 use rayon::prelude::*;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -13,6 +14,14 @@ use std::time::SystemTime;
 pub struct FileState {
     len: u64,
     modified: SystemTime,
+    hash: [u8; blake3::OUT_LEN],
+}
+
+impl FileState {
+    fn blake3_from_file(file: &PathBuf) -> blake3::Hash {
+        let data = std::fs::read(file).unwrap();
+        blake3::hash(&data)
+    }
 }
 
 impl State<PathBuf> for FileState {
@@ -21,15 +30,30 @@ impl State<PathBuf> for FileState {
             Some(FileState {
                 len: attr.len(),
                 modified: attr.modified().unwrap(),
+                hash: Self::blake3_from_file(item).into(),
             })
         } else {
             None
+        }
+    }
+
+    fn has_changed(&self, other: &PathBuf) -> bool {
+        if let Ok(attr) = metadata(other) {
+            if self.len == attr.len() && self.modified == attr.modified().unwrap() {
+                false
+            } else {
+                let other_hash: [u8; blake3::OUT_LEN] = Self::blake3_from_file(other).into();
+                self.hash != other_hash
+            }
+        } else {
+            true
         }
     }
 }
 
 pub trait State<T>: PartialEq + Sized {
     fn from(item: &T) -> Option<Self>;
+    fn has_changed(&self, other: &T) -> bool;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -67,7 +91,7 @@ where
     pub fn has_changed(&self) -> bool {
         self.state
             .par_iter()
-            .find_any(|(item, state)| T::from(item).map_or(true, |x| x != **state))
+            .find_any(|(item, state)| state.has_changed(item))
             .is_some()
     }
 
