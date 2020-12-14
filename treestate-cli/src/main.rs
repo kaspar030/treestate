@@ -1,10 +1,12 @@
+use crossbeam_channel as channel;
 use std::fs::File;
-use std::path::{Path, PathBuf};
-use treestate::{FileState, TreeState};
+use std::path::PathBuf;
+use std::thread;
+use treestate::{FileState, State, TreeState};
 
-use walkdir::WalkDir;
+use ignore::{DirEntry, WalkBuilder};
 
-use anyhow::{Context as _, Error, Result};
+use anyhow::Result;
 use clap::{crate_version, App, AppSettings, Arg, SubCommand};
 
 fn main() {
@@ -50,20 +52,44 @@ fn try_main() -> Result<i32> {
 
     match matches.subcommand() {
         ("store", Some(_matches)) => {
-            let walker = WalkDir::new(".")
-                .into_iter()
-                .filter_map(|e| e.ok())
-                .filter(|e| e.file_type().is_file())
-                .map(|e| e.into_path())
-                .collect::<Vec<_>>();
-            let mut treestate: TreeState<FileState, PathBuf> = TreeState::new(walker.iter());
+            let (tx, rx) = channel::bounded::<(PathBuf, FileState)>(1000);
+
+            let collect_thread = thread::spawn(move || {
+                let res: TreeState<FileState, PathBuf> = TreeState::from(rx.iter());
+                res
+            });
+
+            let walker = WalkBuilder::new(".").build_parallel();
+
+            walker.run(|| {
+                let tx = tx.clone();
+                Box::new(move |result| {
+                    use ignore::WalkState::*;
+
+                    if let Ok(result) = result {
+                        if result.file_type().unwrap().is_file() {
+                            let path_buf = result.into_path();
+                            let state = State::from(&path_buf).unwrap();
+                            tx.send((path_buf, state)).unwrap();
+                        }
+                    }
+                    Continue
+                })
+            });
+
+            drop(tx);
+
+            let mut treestate = collect_thread.join().unwrap();
             treestate.ignore(&PathBuf::from(statefile));
             let file = File::create(&statefile)?;
             treestate.dump(file)?;
         }
         ("status", Some(_matches)) => {
-            let file = File::open(&statefile)?;
-            let mut treestate = TreeState::<FileState, PathBuf>::load(file)?;
+            use std::time::Instant;
+            let start = Instant::now();
+            let file = std::fs::read(&statefile)?;
+            let mut treestate = TreeState::<FileState, PathBuf>::load_vec(&file)?;
+            println!("{:?}", start.elapsed());
             treestate.ignore(&PathBuf::from(statefile));
             std::process::exit(treestate.has_changed() as i32);
         }

@@ -11,7 +11,8 @@ treestate = { path = ".." }
 
 anyhow = "1.0"
 clap = "2.33.1"
-walkdir = "2"
+ignore = "0.4.17"
+crossbeam-channel = "*"
 
 [profile.release]
 lto = true
