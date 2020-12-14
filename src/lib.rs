@@ -60,7 +60,7 @@ pub trait State<T>: PartialEq + Sized {
 pub struct TreeState<T, U>
 where
     T: State<U>,
-    U: Clone + Hash + Eq + Send + Sync,
+    U: Clone + Eq + Hash + Send + Sync,
 {
     state: HashMap<U, T>,
 }
@@ -88,6 +88,15 @@ where
         }
     }
 
+    pub fn from<I>(items: I) -> TreeState<T, U>
+    where
+        I: IntoIterator<Item = (U, T)>,
+    {
+        TreeState {
+            state: items.into_iter().collect::<HashMap<U, T>>(),
+        }
+    }
+
     pub fn has_changed(&self) -> bool {
         self.state
             .par_iter()
@@ -107,6 +116,10 @@ where
         R: Read,
     {
         bincode::deserialize_from::<R, Self>(r)
+    }
+
+    pub fn load_vec(data: &Vec<u8>) -> bincode::Result<Self> {
+        bincode::deserialize(data)
     }
 
     pub fn ignore(&mut self, item: &U) {
