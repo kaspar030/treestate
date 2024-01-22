@@ -1,6 +1,6 @@
 [package]
 name = "treestate"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Kaspar Schleiser <kaspar@schleiser.de>"]
 edition = "2018"
 description = "A simple library to store mtimes of files and check for changes later"
@@ -12,11 +12,11 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-blake3 = "0.3.7"
-bincode = "1.3.1"
-hashbrown = { version = "0.9.1", features = ["rayon", "serde"] }
-rayon = "1.5"
-serde =  { version = "1.0", features = ["derive"] }
+blake3 = "1.5.0"
+bincode = "1.3.3"
+hashbrown = { version = "0.12.3", features = ["rayon", "serde"] }
+rayon = "1.8.1"
+serde =  { version = "1.0.195", features = ["derive"] }
 
 [dev-dependencies]
 utime = "0.3.1"
