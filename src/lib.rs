@@ -1,13 +1,13 @@
-use bincode;
-use hashbrown::HashMap;
-use rayon::prelude::*;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fs::metadata;
 use std::hash::Hash;
 use std::io::prelude::*;
 use std::path::PathBuf;
 use std::time::SystemTime;
+
+use rayon::prelude::*;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct FileState {
@@ -17,14 +17,12 @@ pub struct FileState {
 
 impl State<PathBuf> for FileState {
     fn from(item: &PathBuf) -> Option<Self> {
-        if let Ok(attr) = metadata(item) {
-            Some(FileState {
+        metadata(item)
+            .map(|attr| FileState {
                 len: attr.len(),
                 modified: attr.modified().unwrap(),
             })
-        } else {
-            None
-        }
+            .ok()
     }
 }
 
@@ -41,7 +39,7 @@ where
     state: HashMap<U, T>,
 }
 
-impl<'a, 'de, T: State<U>, U: 'a> TreeState<T, U>
+impl<'a, T: State<U>, U: 'a> TreeState<T, U>
 where
     T: Serialize + DeserializeOwned + Debug + Send + Sync,
     U: Clone + Eq + Hash + Serialize + DeserializeOwned + Send + Sync,
@@ -53,13 +51,7 @@ where
         TreeState {
             state: items
                 .into_iter()
-                .filter_map(|item| {
-                    if let Some(state) = T::from(&item) {
-                        Some((item.clone(), state))
-                    } else {
-                        None
-                    }
-                })
+                .filter_map(|item| T::from(item).map(|state| (item.clone(), state)))
                 .collect::<HashMap<_, _>>(),
         }
     }

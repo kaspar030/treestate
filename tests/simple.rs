@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::path::PathBuf;
 use treestate::{FileState, TreeState};
-use utime;
 
 #[test]
 fn basic() {
