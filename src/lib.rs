@@ -77,6 +77,10 @@ where
         bincode::deserialize_from::<R, Self>(r)
     }
 
+    pub fn load_vec(data: &[u8]) -> bincode::Result<Self> {
+        bincode::deserialize(data)
+    }
+
     pub fn ignore(&mut self, item: &U) {
         self.state.remove(item);
     }
